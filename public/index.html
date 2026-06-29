@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiniela del Tri — Sorteo de equipos Mundial 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pitch:#163B2C; --pitch-deep:#0E2A20; --chalk:#F6F3EA; --gold:#C9962E; --rojo:#B5342A;
+    --line: rgba(246,243,234,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'Inter',sans-serif; background:var(--pitch-deep); background-image: radial-gradient(circle at 20% 0%, rgba(201,150,46,0.08), transparent 45%); min-height:100vh; color:var(--chalk); padding:32px 16px 60px; }
+  .wrap{ background:var(--pitch); background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 42px); max-width:600px; margin:0 auto; border-radius:14px; overflow:hidden; border:1px solid rgba(246,243,234,0.12); }
+  .ticket-head{ padding:30px 28px 20px; border-bottom:2px dashed rgba(246,243,234,0.3); }
+  .eyebrow{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--gold); margin:0 0 8px; }
+  h1{ font-family:'Oswald',sans-serif; font-weight:700; font-size:28px; letter-spacing:0.01em; margin:0 0 6px; color:var(--chalk); text-transform:uppercase; }
+  .sub{ font-size:13.5px; color:rgba(246,243,234,0.65); margin:0; line-height:1.55; }
+  .stub-row{ display:flex; justify-content:space-between; align-items:center; margin-top:18px; font-family:'Space Mono',monospace; font-size:11px; color:rgba(246,243,234,0.55); flex-wrap:wrap; gap:8px; }
+  .pill{ background:rgba(201,150,46,0.16); color:var(--gold); padding:4px 10px; border-radius:20px; font-weight:700; }
+  .body{ padding:26px 28px 28px; }
+  .section-label{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold); margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  .section-label::before{ content:''; width:14px;height:1px; background:var(--gold); display:inline-block; }
+  label.field{ display:block; font-size:12px; color:rgba(246,243,234,0.6); margin-bottom:4px; }
+  input[type=text], select{ width:100%; background:rgba(246,243,234,0.06); border:1px solid rgba(246,243,234,0.22); border-radius:6px; color:var(--chalk); padding:10px 11px; font-size:14.5px; font-family:'Inter',sans-serif; margin-bottom:18px; }
+  input[type=text]:focus, select:focus{ outline:none; border-color:var(--gold); }
+  select{ appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23C9962E'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; }
+  select option{ color:#111; }
+  .price-note{ font-family:'Space Mono',monospace; font-size:11.5px; color:rgba(246,243,234,0.45); margin:-12px 0 18px; }
+  .btn-primary{ width:100%; background:var(--gold); color:var(--pitch-deep); border:none; border-radius:8px; padding:14px; font-family:'Oswald',sans-serif; font-size:15px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase; cursor:pointer; }
+  .btn-primary:active{ transform:scale(0.99); }
+  .btn-primary:disabled{ opacity:0.5; cursor:not-allowed; }
+  .status{ font-family:'Space Mono',monospace; font-size:12px; text-align:center; margin-top:10px; min-height:16px; }
+  .status.ok{ color:#8FCB8A; } .status.err{ color:#E2918A; }
+  .divider{ border-top:2px dashed rgba(246,243,234,0.3); margin:28px 0 22px; }
+  .result-box{ border:1px solid var(--gold); border-radius:8px; padding:16px; margin-bottom:18px; background:rgba(201,150,46,0.08); display:none; }
+  .result-box.show{ display:block; }
+  .result-box .label{ font-family:'Space Mono',monospace; font-size:11px; color:rgba(246,243,234,0.6); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px; }
+  .result-box .team{ font-family:'Oswald',sans-serif; font-size:20px; color:var(--gold); margin:0 0 4px; }
+  table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  th, td{ border:1px solid var(--line); padding:7px 6px; text-align:left; }
+  th{ background:rgba(246,243,234,0.06); color:var(--gold); font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; }
+  td.team-name{ font-weight:500; }
+  td.owner{ color:rgba(246,243,234,0.85); }
+  td.owner.empty{ color:rgba(246,243,234,0.35); font-style:italic; }
+  .tablewrap{ max-height:340px; overflow-y:auto; }
+  footer{ text-align:center; margin-top:22px; font-family:'Space Mono',monospace; font-size:10.5px; color:rgba(246,243,234,0.3); }
+  footer a{ color:var(--gold); text-decoration:none; }
+  .flag-strip{ height:6px; display:flex; }
+  .flag-strip span{ flex:1; }
+  .flag-strip .g{ background:#0B6623; }
+  .flag-strip .w{ background:#F6F3EA; }
+  .flag-strip .r{ background:#C8102E; }
+  .head-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+  .ball{ flex-shrink:0; width:52px; height:52px; margin-top:2px; }
+  .ball-spin{ animation: spin 9s linear infinite; transform-origin:50% 50%; }
+  @keyframes spin{ from{ transform:rotate(0deg);} to{ transform:rotate(360deg);} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="flag-strip"><span class="g"></span><span class="w"></span><span class="r"></span></div>
+
+  <div class="ticket-head">
+    <div class="head-row">
+      <div>
+        <p class="eyebrow">🇲🇽 Mundial 2026 · Sorteo de equipos (desde Octavos)</p>
+        <h1>Quiniela del Tri</h1>
+      </div>
+      <svg class="ball ball-spin" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="46" fill="#F6F3EA" stroke="#1A1A1A" stroke-width="2"/>
+        <polygon points="50,28 62,37 57,52 43,52 38,37" fill="#163B2C" stroke="#1A1A1A" stroke-width="1.5"/>
+        <path d="M50,28 L50,8 M62,37 L80,28 M57,52 L70,68 M43,52 L30,68 M38,37 L20,28" stroke="#1A1A1A" stroke-width="1.5" fill="none"/>
+        <path d="M8,50 a42,42 0 0 1 14,-32" stroke="#1A1A1A" stroke-width="1.2" fill="none" opacity="0.4"/>
+        <path d="M92,50 a42,42 0 0 1 -14,32" stroke="#1A1A1A" stroke-width="1.2" fill="none" opacity="0.4"/>
+      </svg>
+    </div>
+    <p class="sub">Compra tu(s) equipo(s) por $100 cada uno entre los 16 que llegaron a octavos de final. El sorteo te asigna equipos al azar entre los que sigan disponibles. Si tu equipo avanza de ronda, se invierten otros $100 para seguir — así hasta la final. Premios para 1°, 2° y 3er lugar según el resultado real del Mundial.</p>
+    <div class="stub-row">
+      <span class="pill" id="potPill">bote: cargando…</span>
+      <span class="pill" id="remainingPill">cargando…</span>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <p class="section-label">Comprar y sortear</p>
+    <label class="field">Tu nombre</label>
+    <input type="text" id="nombre" placeholder="Ej. Karla M.">
+    <label class="field">Cuántos equipos quieres comprar</label>
+    <select id="cantidad">
+      <option value="1">1 equipo — $100</option>
+      <option value="2">2 equipos — $200</option>
+      <option value="3">3 equipos — $300</option>
+      <option value="4">4 equipos — $400</option>
+      <option value="5">5 equipos — $500</option>
+    </select>
+    <p class="price-note">El cobro es en efectivo/transferencia con el organizador — esto solo hace el sorteo.</p>
+
+    <button class="btn-primary" id="buyBtn">Comprar y sortear</button>
+    <p class="status" id="statusMsg"></p>
+
+    <div class="result-box" id="resultBox">
+      <p class="label">Te tocó</p>
+      <div id="resultTeams"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <p class="section-label">Tabla de equipos y dueños</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Equipo</th><th>Dueño</th><th>Estatus</th></tr></thead>
+        <tbody id="teamsBody"><tr><td colspan="3">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<footer>📊 <a href="/bracket.html">Ver cuadro del torneo →</a> &nbsp;·&nbsp; ¿Eres el organizador? <a href="/admin.html">Dashboard →</a></footer>
+
+<script>
+async function loadTeams(){
+  try{
+    const res = await fetch('/api/teams');
+    const data = await res.json();
+    document.getElementById('potPill').textContent = `bote: $${data.summary.pot.toLocaleString('es-MX')}`;
+    document.getElementById('remainingPill').textContent = `${data.summary.remainingTeams} equipos disponibles`;
+    const tbody = document.getElementById('teamsBody');
+    tbody.innerHTML = '';
+    data.teams.forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="team-name">${t.name}</td><td class="owner ${t.owner ? '' : 'empty'}">${t.owner || 'disponible'}</td><td>${t.status}</td>`;
+      tbody.appendChild(tr);
+    });
+  }catch(e){
+    document.getElementById('potPill').textContent = 'sin conexión';
+  }
+}
+
+document.getElementById('buyBtn').addEventListener('click', async () => {
+  const name = document.getElementById('nombre').value.trim();
+  const quantity = document.getElementById('cantidad').value;
+  const statusMsg = document.getElementById('statusMsg');
+  const resultBox = document.getElementById('resultBox');
+  if(!name){
+    statusMsg.textContent = 'Escribe tu nombre antes de comprar.';
+    statusMsg.className = 'status err';
+    return;
+  }
+  document.getElementById('buyBtn').disabled = true;
+  try{
+    const res = await fetch('/api/buy', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ name, quantity })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Error');
+    const teamsHtml = data.assigned.map(t => `<p class="team">${t.name}</p>`).join('');
+    document.getElementById('resultTeams').innerHTML = teamsHtml;
+    resultBox.classList.add('show');
+    statusMsg.textContent = data.gotFewer ? 'Ya no había suficientes equipos disponibles, te asignamos los que quedaban.' : '¡Listo! Equipo(s) asignado(s).';
+    statusMsg.className = 'status ok';
+    await loadTeams();
+  }catch(e){
+    statusMsg.textContent = 'No se pudo comprar: ' + e.message;
+    statusMsg.className = 'status err';
+  }
+  document.getElementById('buyBtn').disabled = false;
+});
+
+loadTeams();
+</script>
+</body>
+</html>

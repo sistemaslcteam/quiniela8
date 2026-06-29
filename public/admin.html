@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard supervisor — Quiniela del Tri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --pitch:#163B2C; --pitch-deep:#0E2A20; --chalk:#F6F3EA; --gold:#C9962E; --rojo:#B5342A; --line: rgba(246,243,234,0.16); }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:'Inter',sans-serif; background:var(--pitch-deep); color:var(--chalk); min-height:100vh; padding:32px 16px 60px; }
+  .wrap{ max-width:980px; margin:0 auto; }
+  h1{ font-family:'Oswald',sans-serif; font-weight:700; font-size:26px; text-transform:uppercase; margin:0 0 4px; }
+  .eyebrow{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--gold); margin:0 0 6px; }
+  .sub{ color:rgba(246,243,234,0.6); font-size:13.5px; margin:0 0 26px; }
+  .card{ background:var(--pitch); border:1px solid rgba(246,243,234,0.12); border-radius:12px; padding:22px 24px; margin-bottom:22px; }
+  .login-row{ display:flex; gap:10px; max-width:360px; }
+  input[type=password], input[type=text], select{ background:rgba(246,243,234,0.06); border:1px solid rgba(246,243,234,0.22); border-radius:6px; color:var(--chalk); padding:9px 11px; font-size:13.5px; font-family:'Inter',sans-serif; }
+  select option{ color:#111; }
+  button{ background:var(--gold); color:var(--pitch-deep); border:none; border-radius:6px; padding:9px 16px; font-family:'Oswald',sans-serif; font-weight:600; letter-spacing:0.02em; text-transform:uppercase; font-size:13px; cursor:pointer; }
+  button.secondary{ background:transparent; color:var(--gold); border:1px solid var(--gold); }
+  button:disabled{ opacity:0.5; cursor:not-allowed; }
+  .status{ font-family:'Space Mono',monospace; font-size:12px; margin-top:10px; }
+  .status.ok{ color:#8FCB8A; } .status.err{ color:#E2918A; }
+  #appPanel{ display:none; }
+  .section-label{ font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold); margin:0 0 14px; display:flex; align-items:center; gap:8px; }
+  .section-label::before{ content:''; width:14px;height:1px; background:var(--gold); display:inline-block; }
+  .metrics{ display:grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap:12px; margin-bottom:8px; }
+  .metric{ background:rgba(246,243,234,0.05); border-radius:8px; padding:12px 14px; }
+  .metric .lab{ font-family:'Space Mono',monospace; font-size:10.5px; color:rgba(246,243,234,0.5); text-transform:uppercase; margin-bottom:4px; }
+  .metric .val{ font-family:'Oswald',sans-serif; font-size:20px; color:var(--gold); }
+  table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  th, td{ border:1px solid var(--line); padding:7px 6px; text-align:left; }
+  th{ background:rgba(246,243,234,0.06); color:var(--gold); font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; }
+  td input[type=text]{ width:140px; padding:5px 7px; font-size:12.5px; }
+  td select{ width:220px; padding:5px 7px; font-size:12px; }
+  .owner-cell{ color:rgba(246,243,234,0.85); }
+  .owner-cell.empty{ color:rgba(246,243,234,0.35); font-style:italic; }
+  .tablewrap{ overflow-x:auto; max-height:520px; overflow-y:auto; }
+  .refresh-bar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;}
+  .podio{ display:grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap:12px; }
+  .podio .slot{ border-radius:8px; padding:12px 14px; }
+  .podio .slot.gold{ background:rgba(201,150,46,0.18); }
+  .podio .slot.silver{ background:rgba(199,199,199,0.12); }
+  .podio .slot.bronze{ background:rgba(193,138,82,0.16); }
+  .podio .slot .lab{ font-family:'Space Mono',monospace; font-size:10.5px; text-transform:uppercase; color:rgba(246,243,234,0.55); }
+  .podio .slot .nm{ font-family:'Oswald',sans-serif; font-size:15px; margin:2px 0; }
+  .podio .slot .pz{ font-family:'Space Mono',monospace; font-size:13px; color:var(--gold); font-weight:700; }
+  .empty-slot{ color:rgba(246,243,234,0.35); font-style:italic; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Mundial 2026 · Panel privado</p>
+  <h1>Dashboard del supervisor</h1>
+  <p class="sub">Configura los equipos, actualiza su avance de ronda y consulta el bote y los premios calculados al momento.</p>
+
+  <div class="card" id="loginCard">
+    <p class="section-label">Acceso</p>
+    <div class="login-row">
+      <input type="password" id="pass" placeholder="Clave del organizador">
+      <button id="loginBtn">Entrar</button>
+    </div>
+    <p class="status" id="loginStatus"></p>
+  </div>
+
+  <div id="appPanel">
+
+    <div class="card">
+      <p class="section-label">Resumen del bote</p>
+      <div class="metrics">
+        <div class="metric"><div class="lab">Bote total</div><div class="val" id="mPot">$0</div></div>
+        <div class="metric"><div class="lab">Entradas vendidas</div><div class="val" id="mEntries">0 / 16</div></div>
+        <div class="metric"><div class="lab">Premio 1° (60%)</div><div class="val" id="mP1">$0</div></div>
+        <div class="metric"><div class="lab">Premio 2° (25%)</div><div class="val" id="mP2">$0</div></div>
+        <div class="metric"><div class="lab">Premio 3° (15%)</div><div class="val" id="mP3">$0</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="section-label">Podio actual</p>
+      <div class="podio">
+        <div class="slot gold">
+          <div class="lab">Campeón</div>
+          <div class="nm" id="slotCampeon"><span class="empty-slot">sin definir</span></div>
+          <div class="pz" id="pzCampeon"></div>
+        </div>
+        <div class="slot silver">
+          <div class="lab">Subcampeón</div>
+          <div class="nm" id="slotSub"><span class="empty-slot">sin definir</span></div>
+          <div class="pz" id="pzSub"></div>
+        </div>
+        <div class="slot bronze">
+          <div class="lab">3er lugar</div>
+          <div class="nm" id="slotTercero"><span class="empty-slot">sin definir</span></div>
+          <div class="pz" id="pzTercero"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="refresh-bar">
+        <p class="section-label" style="margin:0;">Equipos, dueños y rondas</p>
+        <div style="display:flex; gap:8px;">
+          <button class="secondary" id="refreshBtn">Actualizar</button>
+          <button id="saveNamesBtn">Guardar nombres</button>
+          <button id="saveOwnersBtn">Guardar dueños</button>
+          <button id="saveStatusBtn">Guardar rondas</button>
+        </div>
+      </div>
+      <p class="status" id="saveStatus"></p>
+      <p style="font-family:'Space Mono',monospace; font-size:11px; color:rgba(246,243,234,0.45); margin:0 0 12px;">
+        "Pos. real cuadro" es la posición de ese equipo en las llaves reales del Mundial (1 al 16) — esto define los cruces que se ven en /bracket.html, y es independiente del número de fila (#) con el que se vende cada entrada. Así México puede seguir siendo el equipo #1 a la venta, pero aparecer en su lugar correcto (por ejemplo, posición 9) en el cuadro.<br>
+        Para quitarle el equipo a alguien, borra el nombre de la celda "Dueño" y déjala vacía — el equipo regresa al pool disponible para sortearse de nuevo. También puedes escribir o corregir un nombre directamente.
+      </p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>#</th><th>Equipo</th><th>Pos. real cuadro</th><th>Dueño</th><th>Ronda / estatus</th></tr></thead>
+          <tbody id="teamsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let PASSWORD = "";
+let STATUS_OPTIONS = [];
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const pass = document.getElementById('pass').value;
+  const loginStatus = document.getElementById('loginStatus');
+  loginStatus.textContent = 'Verificando…';
+  loginStatus.className = 'status';
+  const data = await fetchAdminData(pass);
+  if(data.error){
+    loginStatus.textContent = data.error;
+    loginStatus.className = 'status err';
+    return;
+  }
+  PASSWORD = pass;
+  STATUS_OPTIONS = data.statusOptions;
+  document.getElementById('loginCard').style.display = 'none';
+  document.getElementById('appPanel').style.display = 'block';
+  populate(data);
+});
+
+async function fetchAdminData(pass){
+  try{
+    const res = await fetch('/api/admin-data', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ password: pass })
+    });
+    const data = await res.json();
+    if(!res.ok) return { error: data.error || 'Error' };
+    return data;
+  }catch(e){
+    return { error: 'No se pudo conectar' };
+  }
+}
+
+function populate(data){
+  document.getElementById('mPot').textContent = '$' + data.summary.pot.toLocaleString('es-MX');
+  document.getElementById('mEntries').textContent = data.summary.entriesCount + ' / 16';
+  document.getElementById('mP1').textContent = '$' + data.summary.premio1.toLocaleString('es-MX');
+  document.getElementById('mP2').textContent = '$' + data.summary.premio2.toLocaleString('es-MX');
+  document.getElementById('mP3').textContent = '$' + data.summary.premio3.toLocaleString('es-MX');
+
+  setSlot('slotCampeon', 'pzCampeon', data.summary.campeon, data.summary.premio1);
+  setSlot('slotSub', 'pzSub', data.summary.subcampeon, data.summary.premio2);
+  setSlot('slotTercero', 'pzTercero', data.summary.tercero, data.summary.premio3);
+
+  const tbody = document.getElementById('teamsBody');
+  tbody.innerHTML = '';
+  data.teams.forEach(t => {
+    const tr = document.createElement('tr');
+    const optionsHtml = STATUS_OPTIONS.map(s => `<option value="${s}" ${s===t.status?'selected':''}>${s}</option>`).join('');
+    tr.innerHTML = `
+      <td>${t.id}</td>
+      <td><input type="text" data-id="${t.id}" class="name-input" value="${t.name}"></td>
+      <td><input type="text" data-id="${t.id}" class="pos-input" style="width:60px;" value="${t.bracketPos ?? t.id}"></td>
+      <td><input type="text" data-id="${t.id}" class="owner-input" placeholder="disponible" value="${t.owner || ''}"></td>
+      <td><select data-id="${t.id}" class="status-select">${optionsHtml}</select></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function setSlot(slotId, pzId, list, premio){
+  const slotEl = document.getElementById(slotId);
+  const pzEl = document.getElementById(pzId);
+  if(!list || list.length === 0){
+    slotEl.innerHTML = '<span class="empty-slot">sin definir</span>';
+    pzEl.textContent = '';
+    return;
+  }
+  slotEl.innerHTML = list.map(t => `${t.name} (${t.owner})`).join('<br>');
+  pzEl.textContent = '$' + premio.toLocaleString('es-MX') + (list.length > 1 ? ' (a repartir)' : '');
+}
+
+document.getElementById('refreshBtn').addEventListener('click', async () => {
+  const data = await fetchAdminData(PASSWORD);
+  if(!data.error) populate(data);
+});
+
+document.getElementById('saveNamesBtn').addEventListener('click', async () => {
+  const inputs = document.querySelectorAll('.name-input');
+  const posInputs = document.querySelectorAll('.pos-input');
+  const posById = {};
+  posInputs.forEach(p => { posById[p.dataset.id] = p.value; });
+  const names = Array.from(inputs).map(i => ({ id: parseInt(i.dataset.id,10), name: i.value, bracketPos: posById[i.dataset.id] }));
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.textContent = 'Guardando nombres…';
+  statusEl.className = 'status';
+  try{
+    const res = await fetch('/api/admin-setup', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ password: PASSWORD, names })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Error');
+    statusEl.textContent = 'Nombres guardados.';
+    statusEl.className = 'status ok';
+    const fresh = await fetchAdminData(PASSWORD);
+    if(!fresh.error) populate(fresh);
+  }catch(e){
+    statusEl.textContent = 'No se pudo guardar: ' + e.message;
+    statusEl.className = 'status err';
+  }
+});
+
+document.getElementById('saveOwnersBtn').addEventListener('click', async () => {
+  const inputs = document.querySelectorAll('.owner-input');
+  const updates = Array.from(inputs).map(i => ({ id: parseInt(i.dataset.id,10), owner: i.value }));
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.textContent = 'Guardando dueños…';
+  statusEl.className = 'status';
+  try{
+    const res = await fetch('/api/admin-assign', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ password: PASSWORD, updates })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Error');
+    statusEl.textContent = 'Dueños actualizados.';
+    statusEl.className = 'status ok';
+    populate({ teams: data.teams, summary: data.summary });
+  }catch(e){
+    statusEl.textContent = 'No se pudo guardar: ' + e.message;
+    statusEl.className = 'status err';
+  }
+});
+
+document.getElementById('saveStatusBtn').addEventListener('click', async () => {
+  const selects = document.querySelectorAll('.status-select');
+  const updates = Array.from(selects).map(s => ({ id: parseInt(s.dataset.id,10), status: s.value }));
+  const statusEl = document.getElementById('saveStatus');
+  statusEl.textContent = 'Guardando rondas…';
+  statusEl.className = 'status';
+  try{
+    const res = await fetch('/api/admin-update', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ password: PASSWORD, updates })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Error');
+    statusEl.textContent = 'Rondas actualizadas, bote recalculado.';
+    statusEl.className = 'status ok';
+    populate({ teams: data.teams, summary: data.summary });
+  }catch(e){
+    statusEl.textContent = 'No se pudo guardar: ' + e.message;
+    statusEl.className = 'status err';
+  }
+});
+</script>
+</body>
+</html>
