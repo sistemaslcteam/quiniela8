@@ -1,4 +1,4 @@
-const { quinielaStore, getTeams, computeSummary, STATUS_OPTIONS } = require("./lib");
+const { quinielaStore, getTeams, computeSummary, STATUS_OPTIONS, getEntryFee } = require("./lib");
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "AZTECA2026";
 
@@ -30,7 +30,8 @@ exports.handler = async (event) => {
   });
 
   await store.setJSON("teams", updated);
-  const summary = computeSummary(updated);
+  const entryFee = await getEntryFee(store);
+  const summary = computeSummary(updated, entryFee);
 
   return {
     statusCode: 200,
