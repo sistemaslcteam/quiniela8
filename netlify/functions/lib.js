@@ -8,7 +8,7 @@ function quinielaStore() {
   });
 }
 
-const ENTRY_FEE = 100;
+const ENTRY_FEE_DEFAULT = 100;
 const NUM_TEAMS = 16;
 
 const STATUS_OPTIONS = [
@@ -71,12 +71,28 @@ async function getTeams(store) {
   return teams;
 }
 
-function computeSummary(teams) {
+
+async function getEntryFee(store) {
+  const settings = await store.get("settings", { type: "json" });
+  if (settings && typeof settings.entryFee === "number" && settings.entryFee > 0) {
+    return settings.entryFee;
+  }
+  return ENTRY_FEE_DEFAULT;
+}
+
+async function setEntryFee(store, fee) {
+  const settings = (await store.get("settings", { type: "json" })) || {};
+  settings.entryFee = fee;
+  await store.setJSON("settings", settings);
+}
+
+function computeSummary(teams, entryFee) {
+  const fee = entryFee || ENTRY_FEE_DEFAULT;
   let pot = 0;
   const assigned = teams.filter(t => t.owner);
   assigned.forEach(t => {
     const rounds = ROUNDS_PAID[t.status] || 1;
-    pot += rounds * ENTRY_FEE;
+    pot += rounds * fee;
   });
   const find = (status) => assigned.filter(t => t.status === status);
   return {
@@ -93,4 +109,4 @@ function computeSummary(teams) {
   };
 }
 
-module.exports = { quinielaStore, getTeams, defaultTeams, computeSummary, STATUS_OPTIONS, ROUNDS_PAID, ENTRY_FEE, NUM_TEAMS };
+module.exports = { quinielaStore, getTeams, defaultTeams, computeSummary, STATUS_OPTIONS, ROUNDS_PAID, ENTRY_FEE_DEFAULT, NUM_TEAMS, getEntryFee, setEntryFee };
