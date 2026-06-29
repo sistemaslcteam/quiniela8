@@ -76,6 +76,17 @@
         <div class="metric"><div class="lab">Premio 2° (25%)</div><div class="val" id="mP2">$0</div></div>
         <div class="metric"><div class="lab">Premio 3° (15%)</div><div class="val" id="mP3">$0</div></div>
       </div>
+      <div style="display:flex; align-items:flex-end; gap:10px; margin-top:14px; flex-wrap:wrap;">
+        <div>
+          <label class="mini" style="display:block; font-family:'Space Mono',monospace; font-size:11px; color:rgba(246,243,234,0.55); margin-bottom:5px;">Cuota por equipo y por ronda ($)</label>
+          <input type="text" id="entryFeeInput" inputmode="numeric" style="width:120px;" placeholder="100">
+        </div>
+        <button id="saveFeeBtn">Guardar cuota</button>
+      </div>
+      <p class="status" id="feeStatus"></p>
+      <p style="font-family:'Space Mono',monospace; font-size:11px; color:rgba(246,243,234,0.45); margin:6px 0 0;">
+        Aplica para todas las rondas futuras y recalcula el bote con todas las rondas ya pagadas. Cambiar esto a medio torneo afecta retroactivamente cuánto vale cada ronda ya jugada.
+      </p>
     </div>
 
     <div class="card">
@@ -162,6 +173,9 @@ async function fetchAdminData(pass){
 }
 
 function populate(data){
+  if(data.entryFee){
+    document.getElementById('entryFeeInput').value = data.entryFee;
+  }
   document.getElementById('mPot').textContent = '$' + data.summary.pot.toLocaleString('es-MX');
   document.getElementById('mEntries').textContent = data.summary.entriesCount + ' / 16';
   document.getElementById('mP1').textContent = '$' + data.summary.premio1.toLocaleString('es-MX');
@@ -199,6 +213,33 @@ function setSlot(slotId, pzId, list, premio){
   slotEl.innerHTML = list.map(t => `${t.name} (${t.owner})`).join('<br>');
   pzEl.textContent = '$' + premio.toLocaleString('es-MX') + (list.length > 1 ? ' (a repartir)' : '');
 }
+
+document.getElementById('saveFeeBtn').addEventListener('click', async () => {
+  const fee = parseFloat(document.getElementById('entryFeeInput').value);
+  const statusEl = document.getElementById('feeStatus');
+  if(!fee || fee <= 0){
+    statusEl.textContent = 'Escribe una cuota válida mayor a 0.';
+    statusEl.className = 'status err';
+    return;
+  }
+  statusEl.textContent = 'Guardando cuota…';
+  statusEl.className = 'status';
+  try{
+    const res = await fetch('/api/admin-fee', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ password: PASSWORD, entryFee: fee })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Error');
+    statusEl.textContent = `Cuota actualizada a $${fee} por ronda. Bote recalculado.`;
+    statusEl.className = 'status ok';
+    const fresh = await fetchAdminData(PASSWORD);
+    if(!fresh.error) populate(fresh);
+  }catch(e){
+    statusEl.textContent = 'No se pudo guardar: ' + e.message;
+    statusEl.className = 'status err';
+  }
+});
 
 document.getElementById('refreshBtn').addEventListener('click', async () => {
   const data = await fetchAdminData(PASSWORD);
