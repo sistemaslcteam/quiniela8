@@ -90,14 +90,8 @@
     <label class="field">Tu nombre</label>
     <input type="text" id="nombre" placeholder="Ej. Karla M.">
     <label class="field">Cuántos equipos quieres comprar</label>
-    <select id="cantidad">
-      <option value="1">1 equipo — $100</option>
-      <option value="2">2 equipos — $200</option>
-      <option value="3">3 equipos — $300</option>
-      <option value="4">4 equipos — $400</option>
-      <option value="5">5 equipos — $500</option>
-    </select>
-    <p class="price-note">El cobro es en efectivo/transferencia con el organizador — esto solo hace el sorteo.</p>
+    <input type="text" id="cantidad" inputmode="numeric" placeholder="Ej. 1, 2, 3…" value="1">
+    <p class="price-note" id="priceNote">Total: $100 — el cobro es en efectivo/transferencia con el organizador, esto solo hace el sorteo.</p>
 
     <button class="btn-primary" id="buyBtn">Comprar y sortear</button>
     <p class="status" id="statusMsg"></p>
@@ -139,13 +133,24 @@ async function loadTeams(){
   }
 }
 
+document.getElementById('cantidad').addEventListener('input', () => {
+  const v = parseInt(document.getElementById('cantidad').value, 10);
+  const total = (v && v > 0) ? v * 100 : 0;
+  document.getElementById('priceNote').textContent = `Total: $${total.toLocaleString('es-MX')} — el cobro es en efectivo/transferencia con el organizador, esto solo hace el sorteo.`;
+});
+
 document.getElementById('buyBtn').addEventListener('click', async () => {
   const name = document.getElementById('nombre').value.trim();
-  const quantity = document.getElementById('cantidad').value;
+  const quantity = parseInt(document.getElementById('cantidad').value, 10);
   const statusMsg = document.getElementById('statusMsg');
   const resultBox = document.getElementById('resultBox');
   if(!name){
     statusMsg.textContent = 'Escribe tu nombre antes de comprar.';
+    statusMsg.className = 'status err';
+    return;
+  }
+  if(!quantity || quantity < 1){
+    statusMsg.textContent = 'Escribe cuántos equipos quieres comprar (un número mayor a 0).';
     statusMsg.className = 'status err';
     return;
   }
