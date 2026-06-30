@@ -77,7 +77,7 @@
         <path d="M92,50 a42,42 0 0 1 -14,32" stroke="#1A1A1A" stroke-width="1.2" fill="none" opacity="0.4"/>
       </svg>
     </div>
-    <p class="sub">Compra tu(s) equipo(s) por $100 cada uno entre los 16 que llegaron a octavos de final. El sorteo te asigna equipos al azar entre los que sigan disponibles. Si tu equipo avanza de ronda, se invierten otros $100 para seguir — así hasta la final. Premios para 1°, 2° y 3er lugar según el resultado real del Mundial.</p>
+    <p class="sub">Compra tu(s) equipo(s) y el sorteo te asigna al azar entre los que sigan disponibles. Conforme avance el torneo, vuelve a esta página para ver cómo va el bote y los premios.</p>
     <div class="stub-row">
       <span class="pill" id="potPill">bote: cargando…</span>
       <span class="pill" id="remainingPill">cargando…</span>
@@ -91,7 +91,7 @@
     <input type="text" id="nombre" placeholder="Ej. Karla M.">
     <label class="field">Cuántos equipos quieres comprar</label>
     <input type="text" id="cantidad" inputmode="numeric" placeholder="Ej. 1, 2, 3…" value="1">
-    <p class="price-note" id="priceNote">Total: $100 — el cobro es en efectivo/transferencia con el organizador, esto solo hace el sorteo.</p>
+    <p class="price-note" id="priceNote">El monto por equipo lo define el organizador — el cobro es en efectivo/transferencia, esto solo hace el sorteo.</p>
 
     <button class="btn-primary" id="buyBtn">Comprar y sortear</button>
     <p class="status" id="statusMsg"></p>
@@ -115,10 +115,13 @@
 <footer>📊 <a href="/bracket.html">Ver cuadro del torneo →</a> &nbsp;·&nbsp; ¿Eres el organizador? <a href="/admin.html">Dashboard →</a></footer>
 
 <script>
+let CURRENT_FEE = null;
+
 async function loadTeams(){
   try{
     const res = await fetch('/api/teams');
     const data = await res.json();
+    CURRENT_FEE = data.entryFee || null;
     document.getElementById('potPill').textContent = `bote: $${data.summary.pot.toLocaleString('es-MX')}`;
     document.getElementById('remainingPill').textContent = `${data.summary.remainingTeams} equipos disponibles`;
     const tbody = document.getElementById('teamsBody');
@@ -128,16 +131,24 @@ async function loadTeams(){
       tr.innerHTML = `<td class="team-name">${t.name}</td><td class="owner ${t.owner ? '' : 'empty'}">${t.owner || 'disponible'}</td><td>${t.status}</td>`;
       tbody.appendChild(tr);
     });
+    updatePriceNote();
   }catch(e){
     document.getElementById('potPill').textContent = 'sin conexión';
   }
 }
 
-document.getElementById('cantidad').addEventListener('input', () => {
+function updatePriceNote(){
   const v = parseInt(document.getElementById('cantidad').value, 10);
-  const total = (v && v > 0) ? v * 100 : 0;
-  document.getElementById('priceNote').textContent = `Total: $${total.toLocaleString('es-MX')} — el cobro es en efectivo/transferencia con el organizador, esto solo hace el sorteo.`;
-});
+  const note = document.getElementById('priceNote');
+  if(!CURRENT_FEE){
+    note.textContent = 'El monto por equipo lo define el organizador — el cobro es en efectivo/transferencia, esto solo hace el sorteo.';
+    return;
+  }
+  const total = (v && v > 0) ? v * CURRENT_FEE : 0;
+  note.textContent = `Total: $${total.toLocaleString('es-MX')} (cuota actual: $${CURRENT_FEE} por equipo) — el cobro es en efectivo/transferencia con el organizador, esto solo hace el sorteo.`;
+}
+
+document.getElementById('cantidad').addEventListener('input', updatePriceNote);
 
 document.getElementById('buyBtn').addEventListener('click', async () => {
   const name = document.getElementById('nombre').value.trim();
